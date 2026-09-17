@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel da Imobiliária — dashboard de vendas do litoral</title>
+<meta name="description" content="Dashboard para imobiliárias: VGV, vendas por corretor, meta do mês e funil. Satélite da rede praia.digital">
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+header{padding:24px;text-align:center;background:linear-gradient(120deg,#1e293b,#0ea5e9)}
+nav a{color:#fef08a;margin:0 8px;text-decoration:none;font-size:14px}
+.wrap{max-width:860px;margin:auto;padding:24px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:#1e293b;border-radius:14px;padding:16px;text-align:center;border-top:4px solid #0ea5e9}
+.kpi b{display:block;font-size:24px;color:#38bdf8}
+.panel{background:#1e293b;border-radius:16px;padding:22px;margin-bottom:16px}
+label{display:block;margin:10px 0 4px;font-weight:600;font-size:14px}
+input{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:15px}
+.barra{background:#0f172a;border-radius:99px;height:20px;overflow:hidden;margin-top:8px}
+.barra div{height:100%;background:linear-gradient(90deg,#0ea5e9,#22d3ee);transition:width .5s}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:9px;border-bottom:1px solid #334155;text-align:left}
+.rank{color:#38bdf8;font-weight:700}
+footer{padding:20px;text-align:center;font-size:13px;color:#94a3b8}
+footer a{color:#38bdf8}
+</style></head>
+<body>
+<header><h1>🏢 Painel da Imobiliária</h1><p>VGV, corretores e metas — o pulso da sua operação</p>
+<nav><a href="https://praia.digital">Praia Digital</a><a href="https://praia.digital/crm-corretor">CRM do Corretor</a><a href="https://praia.digital/comissao">Comissão</a><a href="https://praia.digital/apps">Todos os apps</a></nav></header>
+<div class="wrap">
+<div class="kpis"><div class="kpi">VGV mês<b id="kVgv">—</b></div><div class="kpi">Vendas<b id="kVendas">—</b></div><div class="kpi">Ticket médio<b id="kTicket">—</b></div><div class="kpi">Comissões<b id="kCom">—</b></div></div>
+<div class="panel"><h2>🎯 Meta do mês</h2>
+<label>Meta de VGV (R$)</label><input type="number" id="meta" value="5000000" oninput="draw()">
+<div class="barra"><div id="metaBar"></div></div><p id="metaTxt" style="text-align:center"></p></div>
+<div class="panel"><h2>👥 Vendas por corretor</h2><div id="rows"></div><table id="tab"></table></div>
+</div>
+<footer>Rede <a href="https://praia.digital">praia.digital</a> · <a href="https://praia.digital/hermes-agents">Hermes Agents</a> · <a href="https://praia.digital/portal-corretores">Portal do Corretor</a> · <a href="https://praia.digital/radar-precos">Radar de Preços</a></footer>
+<script>
+const KEY='painelimob';let dados=JSON.parse(localStorage.getItem(KEY)||'null')||[
+{n:'Ana Souza',v:3,vgv:1850000},{n:'Bruno Lima',v:2,vgv:1200000},{n:'Carla Reis',v:4,vgv:2600000},{n:'Diego Alves',v:1,vgv:430000}];
+function fmt(v){return 'R$ '+(v>=1e6?(v/1e6).toFixed(1).replace('.',',')+' mi':Math.round(v).toLocaleString('pt-BR'))}
+function save(){localStorage.setItem(KEY,JSON.stringify(dados));}
+function draw(){
+const vgv=dados.reduce((s,x)=>s+x.vgv,0),v=dados.reduce((s,x)=>s+x.v,0);
+kVgv.textContent=fmt(vgv);kVendas.textContent=v;kTicket.textContent=fmt(v?vgv/v:0);kCom.textContent=fmt(vgv*0.06);
+const pct=Math.min(100,Math.round(vgv/+meta.value*100));metaBar.style.width=pct+'%';
+metaTxt.textContent=pct>=100?'🎉 Meta batida!':pct+'% da meta de '+fmt(+meta.value);
+rows.innerHTML=dados.map((x,i)=>`<div style="display:flex;gap:8px;margin-bottom:8px"><input value="${x.n}" onchange="dados[${i}].n=this.value;save();draw()" style="flex:2"><input type="number" value="${x.v}" onchange="dados[${i}].v=+this.value;save();draw()" title="Vendas" style="flex:1"><input type="number" value="${x.vgv}" onchange="dados[${i}].vgv=+this.value;save();draw()" title="VGV" style="flex:2"><button onclick="dados.splice(${i},1);save();draw()" style="background:#7f1d1d;color:#fff;border:none;border-radius:8px;padding:0 12px;cursor:pointer">✖</button></div>`).join('');
+tab.innerHTML='<tr><th>#</th><th>Corretor</th><th>Vendas</th><th>VGV</th><th>Comissão est.</th></tr>'+[...dados].sort((a,b)=>b.vgv-a.vgv).map((x,i)=>`<tr><td class="rank">${i+1}º</td><td>${x.n}</td><td>${x.v}</td><td>${fmt(x.vgv)}</td><td>${fmt(x.vgv*0.03)}</td></tr>`).join('');}
+draw();
+function addRow(){dados.push({n:'Novo corretor',v:0,vgv:0});save();draw();}
+rows.insertAdjacentHTML('afterend','<button onclick="addRow()" style="background:#0ea5e9;color:#fff;border:none;border-radius:10px;padding:10px 20px;cursor:pointer;font-weight:700">+ Corretor</button>');
+</script></body></html>
